@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛍️ TRUEQUE JOVEN - Intercambia, no compres</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#764ba2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TruequeJoven">
+    <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=180&h=180&fit=crop">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Scripts and Styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .chat-bubble {
+            max-width: 70%;
+        }
+        .chat-bubble.own {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="truequejoven()">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-xl font-bold">🛍️ TRUEQUE JOVEN</h1>
+                </div>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="#" @click="currentView = 'home'" class="hover:text-purple-200 transition-colors">
+                        <i class="fas fa-home mr-1"></i>Inicio
+                    </a>
+                    <a href="#" @click="currentView = 'publish'" class="hover:text-purple-200 transition-colors">
+                        <i class="fas fa-plus mr-1"></i>Publicar
+                    </a>
+                    <a href="#" @click="currentView = 'chat'" class="hover:text-purple-200 transition-colors">
+                        <i class="fas fa-comments mr-1"></i>Mensajes
+                    </a>
+                    <a href="#" @click="currentView = 'profile'" class="hover:text-purple-200 transition-colors">
+                        <i class="fas fa-user mr-1"></i>Perfil
+                    </a>
+                </nav>
+                <div class="flex items-center space-x-3">
+                    <span class="text-sm" x-text="user.name"></span>
+                    <img :src="user.avatar" class="w-8 h-8 rounded-full border-2 border-white">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation -->
+    <nav class="md:hidden bg-white shadow-sm border-t fixed bottom-0 left-0 right-0 z-40">
+        <div class="flex justify-around py-2">
+            <button @click="currentView = 'home'" class="flex flex-col items-center py-2 px-3 text-gray-600 hover:text-purple-600">
+                <i class="fas fa-home text-lg"></i>
+                <span class="text-xs mt-1">Inicio</span>
+            </button>
+            <button @click="currentView = 'publish'" class="flex flex-col items-center py-2 px-3 text-gray-600 hover:text-purple-600">
+                <i class="fas fa-plus text-lg"></i>
+                <span class="text-xs mt-1">Publicar</span>
+            </button>
+            <button @click="currentView = 'chat'" class="flex flex-col items-center py-2 px-3 text-gray-600 hover:text-purple-600">
+                <i class="fas fa-comments text-lg"></i>
+                <span class="text-xs mt-1">Mensajes</span>
+            </button>
+            <button @click="currentView = 'profile'" class="flex flex-col items-center py-2 px-3 text-gray-600 hover:text-purple-600">
+                <i class="fas fa-user text-lg"></i>
+                <span class="text-xs mt-1">Perfil</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6 pb-20 md:pb-6">
+        <!-- Home View -->
+        <div x-show="currentView === 'home'" x-transition>
+            <!-- Search and Filters -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1">
+                        <div class="relative">
+                            <input type="text" 
+                                   x-model="searchQuery" 
+                                   @input="filterProducts()"
+                                   placeholder="¿Qué estás buscando?"
+                                   class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+                    <select x-model="selectedCategory" @change="filterProducts()" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <option value="">Todas las categorías</option>
+                        <option value="ropa">👕 Ropa</option>
+                        <option value="libros">📚 Libros</option>
+                        <option value="tecnologia">📱 Tecnología</option>
+                        <option value="utiles">✏️ Útiles Escolares</option>
+                        <option value="deportes">⚽ Deportes</option>
+                        <option value="otros">🎁 Otros</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <template x-for="product in filteredProducts" :key="product.id">
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden card-hover cursor-pointer" @click="viewProduct(product)">
+                        <div class="aspect-square bg-gray-200 relative overflow-hidden">
+                            <img :src="product.image" :alt="product.title" class="w-full h-full object-cover">
+                            <div class="absolute top-2 right-2">
+                                <span class="bg-white bg-opacity-90 text-xs px-2 py-1 rounded-full" x-text="getCategoryIcon(product.category) + ' ' + product.category"></span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-semibold text-gray-800 mb-2 line-clamp-2" x-text="product.title"></h3>
+                            <p class="text-sm text-gray-600 mb-2" x-text="product.description"></p>
+                            <div class="flex items-center text-sm text-gray-500 mb-2">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                <span x-text="product.location"></span>
+                            </div>
+                            <div class="bg-purple-50 rounded-lg p-2">
+                                <p class="text-sm text-purple-700">
+                                    <strong>Busca:</strong> <span x-text="product.wantedItems"></span>
+                                </p>
+                            </div>
+                            <div class="flex items-center justify-between mt-3">
+                                <div class="flex items-center">
+                                    <img :src="product.user.avatar" class="w-6 h-6 rounded-full mr-2">
+                                    <span class="text-sm text-gray-600" x-text="product.user.name"></span>
+                                </div>
+                                <div class="flex items-center text-yellow-500">
+                                    <i class="fas fa-star text-xs"></i>
+                                    <span class="text-xs ml-1" x-text="product.user.rating"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Publish View -->
+        <div x-show="currentView === 'publish'" x-transition>
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">📦 Publicar Intercambio</h2>
+                    
+                    <form @submit.prevent="publishProduct()">
+                        <!-- Image Upload -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Fotos del producto</label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-600">Arrastra tus fotos aquí o haz clic para seleccionar</p>
+                                <input type="file" multiple accept="image/*" class="hidden" id="imageUpload">
+                                <button type="button" onclick="document.getElementById('imageUpload').click()" class="mt-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors">
+                                    Seleccionar fotos
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Título del producto</label>
+                            <input type="text" 
+                                   x-model="newProduct.title" 
+                                   placeholder="Ej: Auriculares Sony WH-1000XM4"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
+                                   required>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                            <textarea x-model="newProduct.description" 
+                                      placeholder="Describe tu producto, su estado, por qué lo intercambias..."
+                                      rows="4"
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
+                                      required></textarea>
+                        </div>
+
+                        <!-- Category and Condition -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                                <select x-model="newProduct.category" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required>
+                                    <option value="">Selecciona una categoría</option>
+                                    <option value="ropa">👕 Ropa</option>
+                                    <option value="libros">📚 Libros</option>
+                                    <option value="tecnologia">📱 Tecnología</option>
+                                    <option value="utiles">✏️ Útiles Escolares</option>
+                                    <option value="deportes">⚽ Deportes</option>
+                                    <option value="otros">🎁 Otros</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                                <select x-model="newProduct.condition" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required>
+                                    <option value="">Selecciona el estado</option>
+                                    <option value="nuevo">✨ Nuevo</option>
+                                    <option value="usado">👍 Usado - Buen estado</option>
+                                    <option value="deteriorado">⚠️ Deteriorado</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- What you want -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">¿Qué aceptas a cambio?</label>
+                            <input type="text" 
+                                   x-model="newProduct.wantedItems" 
+                                   placeholder="Ej: Libros de ciencia ficción, ropa talla M, útiles escolares..."
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
+                                   required>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Ubicación</label>
+                            <input type="text" 
+                                   x-model="newProduct.location" 
+                                   placeholder="Ej: Ciudad de México, Polanco"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
+                                   required>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full gradient-bg text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 transition-opacity">
+                            🚀 Publicar Intercambio
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat View -->
+        <div x-show="currentView === 'chat'" x-transition>
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">💬 Mensajes</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Chat List -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white rounded-lg shadow-sm">
+                            <div class="p-4 border-b">
+                                <h3 class="font-semibold text-gray-800">Conversaciones</h3>
+                            </div>
+                            <div class="divide-y">
+                                <template x-for="chat in chats" :key="chat.id">
+                                    <div class="p-4 hover:bg-gray-50 cursor-pointer" 
+                                         @click="selectedChat = chat"
+                                         :class="{'bg-purple-50': selectedChat && selectedChat.id === chat.id}">
+                                        <div class="flex items-center space-x-3">
+                                            <img :src="chat.user.avatar" class="w-10 h-10 rounded-full">
+                                            <div class="flex-1 min-w-0">
+                                                <p class="font-medium text-gray-800" x-text="chat.user.name"></p>
+                                                <p class="text-sm text-gray-600 truncate" x-text="chat.lastMessage"></p>
+                                            </div>
+                                            <div class="text-xs text-gray-500" x-text="chat.time"></div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-lg shadow-sm h-96 flex flex-col" x-show="selectedChat">
+                            <!-- Chat Header -->
+                            <div class="p-4 border-b flex items-center space-x-3">
+                                <img :src="selectedChat?.user.avatar" class="w-10 h-10 rounded-full">
+                                <div>
+                                    <p class="font-medium text-gray-800" x-text="selectedChat?.user.name"></p>
+                                    <p class="text-sm text-gray-500">En línea</p>
+                                </div>
+                            </div>
+
+                            <!-- Messages -->
+                            <div class="flex-1 p-4 overflow-y-auto space-y-4">
+                                <template x-for="message in selectedChat?.messages || []" :key="message.id">
+                                    <div class="flex" :class="message.own ? 'justify-end' : 'justify-start'">
+                                        <div class="chat-bubble rounded-lg p-3 max-w-xs" 
+                                             :class="message.own ? 'own text-white' : 'bg-gray-100 text-gray-800'">
+                                            <p x-text="message.text"></p>
+                                            <p class="text-xs mt-1 opacity-70" x-text="message.time"></p>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Message Input -->
+                            <div class="p-4 border-t">
+                                <div class="flex space-x-2">
+                                    <input type="text" 
+                                           x-model="newMessage"
+                                           @keyup.enter="sendMessage()"
+                                           placeholder="Escribe tu mensaje..."
+                                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <button @click="sendMessage()" class="px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- No chat selected -->
+                        <div class="bg-white rounded-lg shadow-sm h-96 flex items-center justify-center" x-show="!selectedChat">
+                            <div class="text-center text-gray-500">
+                                <i class="fas fa-comments text-4xl mb-4"></i>
+                                <p>Selecciona una conversación para comenzar</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile View -->
+        <div x-show="currentView === 'profile'" x-transition>
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="text-center mb-6">
+                        <img :src="user.avatar" class="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-purple-200">
+                        <h2 class="text-2xl font-bold text-gray-800" x-text="user.name"></h2>
+                        <p class="text-gray-600" x-text="user.location"></p>
+                        <div class="flex items-center justify-center mt-2 space-x-1">
+                            <template x-for="i in 5" :key="i">
+                                <i class="fas fa-star text-yellow-500 text-sm" x-show="i <= user.rating"></i>
+                            </template>
+                            <span class="text-sm text-gray-600 ml-2" x-text="'(' + user.totalRatings + ' valoraciones)'"></span>
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="text-center p-4 bg-purple-50 rounded-lg">
+                            <p class="text-2xl font-bold text-purple-600" x-text="user.stats.published"></p>
+                            <p class="text-sm text-gray-600">Publicados</p>
+                        </div>
+                        <div class="text-center p-4 bg-green-50 rounded-lg">
+                            <p class="text-2xl font-bold text-green-600" x-text="user.stats.exchanged"></p>
+                            <p class="text-sm text-gray-600">Intercambios</p>
+                        </div>
+                        <div class="text-center p-4 bg-blue-50 rounded-lg">
+                            <p class="text-2xl font-bold text-blue-600" x-text="user.stats.rating"></p>
+                            <p class="text-sm text-gray-600">Puntuación</p>
+                        </div>
+                    </div>
+
+                    <!-- My Products -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Mis Publicaciones</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <template x-for="product in userProducts" :key="product.id">
+                                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                    <div class="flex space-x-3">
+                                        <img :src="product.image" class="w-16 h-16 rounded-lg object-cover">
+                                        <div class="flex-1">
+                                            <h4 class="font-medium text-gray-800" x-text="product.title"></h4>
+                                            <p class="text-sm text-gray-600" x-text="product.category"></p>
+                                            <p class="text-xs text-gray-500 mt-1" x-text="product.status"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="space-y-3">
+                        <button class="w-full px-4 py-3 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors">
+                            <i class="fas fa-edit mr-2"></i>Editar Perfil
+                        </button>
+                        <button class="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-cog mr-2"></i>Configuración
+                        </button>
+                        <button class="w-full px-4 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Product Modal -->
+    <div x-show="showProductModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+         @click.self="showProductModal = false">
+        
+        <div class="bg-white rounded-lg max-w-2xl w-full max-h-90vh overflow-y-auto"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform scale-95"
+             x-transition:enter-end="opacity-100 transform scale-100">
+            
+            <div class="p-6" x-show="selectedProduct">
+                <div class="flex justify-between items-start mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800" x-text="selectedProduct?.title"></h2>
+                    <button @click="showProductModal = false" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="mb-6">
+                    <img :src="selectedProduct?.image" class="w-full h-64 object-cover rounded-lg">
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <h3 class="font-semibold text-gray-800">Descripción</h3>
+                        <p class="text-gray-600" x-text="selectedProduct?.description"></p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Categoría</h3>
+                            <p class="text-gray-600" x-text="selectedProduct?.category"></p>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Estado</h3>
+                            <p class="text-gray-600" x-text="selectedProduct?.condition"></p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-semibold text-gray-800">Ubicación</h3>
+                        <p class="text-gray-600" x-text="selectedProduct?.location"></p>
+                    </div>
+
+                    <div class="bg-purple-50 rounded-lg p-4">
+                        <h3 class="font-semibold text-purple-800 mb-2">Busca a cambio:</h3>
+                        <p class="text-purple-700" x-text="selectedProduct?.wantedItems"></p>
+                    </div>
+
+                    <div class="border-t pt-4">
+                        <div class="flex items-center space-x-3">
+                            <img :src="selectedProduct?.user.avatar" class="w-12 h-12 rounded-full">
+                            <div>
+                                <p class="font-semibold text-gray-800" x-text="selectedProduct?.user.name"></p>
+                                <div class="flex items-center">
+                                    <div class="flex text-yellow-500 mr-2">
+                                        <template x-for="i in 5" :key="i">
+                                            <i class="fas fa-star text-xs" x-show="i <= selectedProduct?.user.rating"></i>
+                                        </template>
+                                    </div>
+                                    <span class="text-sm text-gray-600" x-text="selectedProduct?.user.rating + '/5'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex space-x-3">
+                    <button @click="startChat(selectedProduct)" class="flex-1 gradient-bg text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 transition-opacity">
+                        <i class="fas fa-comments mr-2"></i>Enviar Mensaje
+                    </button>
+                    <button class="px-6 py-3 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
